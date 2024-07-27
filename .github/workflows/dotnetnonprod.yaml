@@ -3,7 +3,7 @@ name: dotnet package
 on: 
   push: #update
     branches: 
-      - main
+      - nonprod
 
 jobs:
   build:
