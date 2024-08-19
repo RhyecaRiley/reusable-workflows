@@ -1,0 +1,67 @@
+name: "Version Bump in YYYY.MM.DD.version format"
+
+inputs:
+  todays_date:
+    description: "Date of workflow run"
+    required: true
+  container_version:
+    description: "Current version"
+    required: true
+
+outputs: 
+  application_version:
+    description: "New version in the date format"
+    value: ${{ steps.determineVersion.outputs.applicationVersion }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: determine version
+      id: determineVersion
+      shell: bash
+      run: |
+        version=${{ inputs.todays_date }}
+        today_yyyy=`echo ${{ inputs.todays_date }}|cut -c1-4`
+        today_mm=`echo ${{ inputs.todays_date }}|cut -c6,7`
+        today_dd=`echo ${{ inputs.todays_date }}|cut -c9,10`
+        today_revision=`echo ${{ inputs.todays_date }}|cut -c12-13`
+        latest_yyyy=`echo ${{ inputs.container_version }}|cut -c1-4`
+        latest_mm=`echo ${{ inputs.container_version }}|cut -c6,7`
+        latest_dd=`echo ${{ inputs.container_version }}|cut -c9,10`
+        latest_revision=`echo ${{ inputs.container_version }}| cut -c12,13`
+        if [ $today_yyyy -lt $latest_yyyy ]
+        then
+        echo "year in container version is future year, exiting with error"
+        exit 1
+        elif [ $today_yyyy -gt $latest_yyyy ]
+        then
+        echo "new year found, version will be set to today's date"
+        echo "applicationVersion=${version}" >> $GITHUB_OUTPUT
+        else
+          if [ $today_mm -lt $latest_mm ]
+          then
+          echo "month in container version is future month, exiting with error"
+          exit 1
+          elif [ $today_mm -gt $latest_mm ]
+          then
+          echo "new month found, version will be set to today's date"
+          echo "applicationVersion=${version}" >> $GITHUB_OUTPUT
+          else
+            if [ $today_dd -lt $latest_dd ]
+            then
+            echo "day in container version is future day, exiting with error"
+            exit 1
+            elif [ $today_dd -gt $latest_dd ]
+            then
+            echo "new day found, version will be set to today's date"
+            echo "applicationVersion=${version}" >> $GITHUB_OUTPUT
+            else
+            echo "year, month, and day are equal, increment revision number"
+            x=`expr $latest_revision + 1`
+            new_revision=$(printf "%02d" $x)
+            version=$latest_yyyy.$latest_mm.$latest_dd.$new_revision
+            echo "applicationVersion=${version}" >> $GITHUB_OUTPUT
+            fi
+          fi
+        fi
+        echo "INFO: version=${version}"
